@@ -750,8 +750,15 @@ public class FurnitureTable extends JTable implements View, Printable {
           return headerRendererLabel;
         }
       };
+
+    boolean levelColumnIsAlreadyVisible = false;
+
     for (int columnIndex = 0, n = columnModel.getColumnCount(); columnIndex < n; columnIndex++) {
       final TableColumn tableColumn = columnModel.getColumn(columnIndex);
+      if (tableColumn.getIdentifier() == HomePieceOfFurniture.SortableProperty.LEVEL) {
+        levelColumnIsAlreadyVisible = true;
+      }
+
       // Create a printable column from existing table column
       TableColumn printableColumn = new TableColumn();
       printableColumn.setIdentifier(tableColumn.getIdentifier());
@@ -778,7 +785,39 @@ public class FurnitureTable extends JTable implements View, Printable {
       // Change printable column header renderer
       printableColumn.setHeaderRenderer(printableHeaderRenderer);
       printableColumnModel.addColumn(printableColumn);
-    }    
+    }
+    if (!levelColumnIsAlreadyVisible) {
+      final TableColumn levelColumn =
+              ((FurnitureTableColumnModel) columnModel).availableColumns.get(
+                      HomePieceOfFurniture.SortableProperty.LEVEL);
+
+      TableColumn printableLevelColumn = new TableColumn();
+      printableLevelColumn.setIdentifier(levelColumn.getIdentifier());
+      printableLevelColumn.setHeaderValue(levelColumn.getHeaderValue());
+
+      TableCellRenderer printableCellRenderer = new TableCellRenderer() {
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+          // Delegate rendering to existing cell renderer
+          TableCellRenderer cellRenderer = levelColumn.getCellRenderer();
+          Component rendererComponent = cellRenderer.getTableCellRendererComponent(table, value,
+                  isSelected, hasFocus, row, column);
+          if (rendererComponent instanceof JCheckBox) {
+            // Prefer a x sign for boolean values instead of check boxes
+            rendererComponent = defaultRenderer.getTableCellRendererComponent(table,
+                    ((JCheckBox) rendererComponent).isSelected() ? "x" : "", false, false, row, column);
+          }
+          rendererComponent.setBackground(Color.WHITE);
+          rendererComponent.setForeground(Color.BLACK);
+          return rendererComponent;
+
+
+        }
+      };
+    printableLevelColumn.setCellRenderer(printableCellRenderer);
+    printableLevelColumn.setHeaderRenderer(printableHeaderRenderer);
+    printableColumnModel.addColumn(printableLevelColumn);
+    }
     return print(g, pageFormat, pageIndex, printableColumnModel, Color.BLACK);
   }
 
